@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\coron\OneDrive\바탕 화면\2025.2-2\seoul25_AI_ht\gitHub\regendneverdie\replanet_v123\backend\venv
+set VIRTUAL_ENV=C:\Users\이승재\Downloads\서울AI해커톤\replanet_v1313123\backend\venv
 
 if not defined PROMPT set PROMPT=$P$G
 

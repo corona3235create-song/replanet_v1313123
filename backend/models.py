@@ -30,6 +30,7 @@ class TransportMode(str, enum.Enum):
     BIKE = "BIKE"
     WALK = "WALK"
     CAR = "CAR"
+    TTAREUNGI = "TTAREUNGI"
     ANY = "ANY"   # Challenge 기본값 문제 해결 위해 추가
 
 class CreditType(str, enum.Enum):
@@ -347,6 +348,33 @@ class BusDistance(Base):
     stop_start = Column(String(255))
     stop_end = Column(String(255))
     distance_km = Column(Numeric(6, 2))   # ✅ 수정됨
+
+# Transport Infrastructure
+class BusStop(Base):
+    __tablename__ = "bus_stops"
+
+    stop_id = Column(Integer, primary_key=True, index=True)
+    stop_name = Column(String(100), nullable=False)
+    latitude = Column(Numeric(10, 7), nullable=False)
+    longitude = Column(Numeric(10, 7), nullable=False)
+
+class SubwayStation(Base):
+    __tablename__ = "subway_stations"
+
+    station_id = Column(Integer, primary_key=True, index=True)
+    station_name = Column(String(100), nullable=False)
+    line_number = Column(String(50))
+    latitude = Column(Numeric(10, 7), nullable=False)
+    longitude = Column(Numeric(10, 7), nullable=False)
+
+class TtareungiStation(Base):
+    __tablename__ = "ttareungi_stations"
+
+    station_id = Column(Integer, primary_key=True, index=True)
+    station_name = Column(String(100), nullable=False)
+    latitude = Column(Numeric(10, 7), nullable=False)
+    longitude = Column(Numeric(10, 7), nullable=False)
+
 
 # Garden System
 class GardenLevel(Base):

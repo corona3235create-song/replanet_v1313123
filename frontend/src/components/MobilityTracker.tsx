@@ -1,14 +1,6 @@
-// MobilityTracker.tsx
-// [자동 기록 기능 추가] 전체 파일이 새롭게 추가되었습니다.
-// 이 컴포넌트는 GPS를 이용해 사용자의 이동 기록을 실시간으로 추적하는 역할을 합니다.
-
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext'; // useAuth 임포트
-
-// [자동 기록 기능 추가] 이동 수단 타입을 정의합니다.
-type TransportMode = 'WALK' | 'BIKE' | 'BUS' | 'SUBWAY';
-const TRANSPORT_MODES: TransportMode[] = ['WALK', 'BIKE', 'BUS', 'SUBWAY'];
 
 // [자동 기록 기능 추가] 위도, 경도 좌표의 타입을 정의합니다.\
 interface Position {
@@ -22,7 +14,6 @@ const MobilityTracker: React.FC = () => {
   const { user } = useAuth(); // 현재 사용자 정보 가져오기
   // [자동 기록 기능 추가] 컴포넌트의 상태 변수들을 정의합니다.
   const [isTracking, setIsTracking] = useState<boolean>(false); // 현재 추적 중인지 여부
-  const [selectedMode, setSelectedMode] = useState<TransportMode | null>(null); // 선택된 이동 수단
   const [distance, setDistance] = useState<number>(0); // 총 이동 거리 (km)
   const [startTime, setStartTime] = useState<Date | null>(null); // 시작 시간
   const [positions, setPositions] = useState<Position[]>([]); // 이동 경로 좌표 배열
@@ -61,11 +52,6 @@ const MobilityTracker: React.FC = () => {
 
   // [자동 기록 기능 추가] "기록 시작" 버튼을 눌렀을 때 실행되는 함수
   const handleStartTracking = () => {
-    if (!selectedMode || !TRANSPORT_MODES.includes(selectedMode)) {
-      alert('이동 수단을 먼저 선택해주세요.');
-      return;
-    }
-
     // GPS 권한 확인 및 위치 정보 받아오기 시작
     if (navigator.geolocation) {
       setIsTracking(true);
@@ -118,43 +104,32 @@ const MobilityTracker: React.FC = () => {
     const endTime = new Date();
 
     // 사전 유효성 검사
-    if (!selectedMode || !TRANSPORT_MODES.includes(selectedMode)) {
-      setSelectedMode(null);
-      setDistance(0);
-      return;
-    }
     if (!startTime) {
-      setSelectedMode(null);
       setDistance(0);
       return;
     }
     // if (!Number.isFinite(distance) || distance < 0.001) { // 1m 미만이면 저장하지 않음 (주석 처리 또는 제거)
-    //   setSelectedMode(null);
     //   setDistance(0);
     //   return;
     // }
     if (!API_URL) {
       alert('API URL이 설정되지 않았습니다(.env의 REACT_APP_API_URL 확인).');
-      setSelectedMode(null);
       setDistance(0);
       return;
     }
     if (!user || !user.user_id) { // 사용자 인증 확인
       alert('로그인된 사용자 정보가 없습니다. 다시 로그인해주세요.');
-      setSelectedMode(null);
       setDistance(0);
       return;
     }
 
     const logData = {
       user_id: user.user_id, // 실제 로그인된 사용자 ID로 교체
-      mode: selectedMode, // 백엔드가 Enum(MobilityMode) 기대
       distance_km: distance,
       started_at: startTime.toISOString(),
       ended_at: endTime.toISOString(),
-      // 필요 시 start_point/end_point 포함 가능
-      // start_point: positions[0] ? `${positions[0].lat},${positions[0].lon}` : null,
-      // end_point: positions[positions.length - 1] ? `${positions[positions.length - 1].lat},${positions[positions.length - 1].lon}` : null,
+      start_point: positions[0] ? `${positions[0].lat},${positions[0].lon}` : null,
+      end_point: positions[positions.length - 1] ? `${positions[positions.length - 1].lat},${positions[positions.length - 1].lon}` : null,
     };
 
     try {
@@ -239,7 +214,6 @@ const MobilityTracker: React.FC = () => {
     } finally {
       savingRef.current = false;
       // 상태 초기화
-      setSelectedMode(null);
       setDistance(0);
       setPositions([]);
       setStartTime(null);
@@ -269,42 +243,6 @@ const MobilityTracker: React.FC = () => {
     >
       <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>실시간 이동 기록</h3>
 
-      {!isTracking && (
-        <div>
-          <p style={{ textAlign: 'center', marginBottom: '12px' }}>
-            이동 수단을 선택하세요:
-          </p>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: '10px',
-            }}
-          >
-            {TRANSPORT_MODES.map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setSelectedMode(mode)}
-                style={{
-                  backgroundColor: selectedMode === mode ? '#1abc9c' : '#e9ecef',
-                  color: selectedMode === mode ? 'white' : 'black',
-                  border: 'none',
-                  borderRadius: '20px',
-                  padding: '12px 20px',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div style={{ marginTop: '24px', textAlign: 'center' }}>
         {isTracking ? (
           <button
@@ -326,16 +264,15 @@ const MobilityTracker: React.FC = () => {
         ) : (
           <button
             onClick={handleStartTracking}
-            disabled={!selectedMode}
             style={{
-              backgroundColor: selectedMode ? '#1abc9c' : '#bdc3c7',
+              backgroundColor: '#1abc9c',
               color: 'white',
               border: 'none',
               borderRadius: '25px',
               padding: '15px 30px',
               fontSize: '1.1rem',
               fontWeight: 'bold',
-              cursor: selectedMode ? 'pointer' : 'not-allowed',
+              cursor: 'pointer',
               width: '100%',
             }}
           >
@@ -355,7 +292,7 @@ const MobilityTracker: React.FC = () => {
           }}
         >
           <p>
-            <strong>{selectedMode}</strong> 모드로 추적 중...
+            <strong>자동</strong> 모드로 추적 중...
           </p>
           <p
             style={{

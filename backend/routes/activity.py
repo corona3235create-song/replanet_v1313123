@@ -4,7 +4,10 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Dict, Any
 from datetime import datetime
-from .. import database, crud
+from .. import database, models
+from ..dependencies import get_current_user
+from ..services.mobility_service import MobilityService
+from .. import schemas
 
 router = APIRouter(prefix="/activity", tags=["activity"])
 
@@ -14,6 +17,10 @@ class ActivityLogRequest(BaseModel):
     activity_type: str  # "subway", "bike", "bus", "walk"
     distance_km: float = 0.0
     description: str = ""
+    start_point: str | None = None
+    end_point: str | None = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
 
 # 📌 활동 타입별 설정
 ACTIVITY_CONFIG = {
@@ -39,7 +46,7 @@ ACTIVITY_CONFIG = {
     }
 }
 
-@router.post("/log")
+
 # 💡 request 대신 current_user를 받도록 시그니처 수정
 def log_activity(
     request: ActivityLogRequest, 
@@ -61,37 +68,21 @@ def log_activity(
     if request.activity_type not in ACTIVITY_CONFIG:
         raise HTTPException(status_code=400, detail="지원하지 않는 활동 타입입니다.")
     
-    config = ACTIVITY_CONFIG[request.activity_type]
-    
-    # 기본 거리 설정 (거리가 0이면 기본값 사용)
-    if request.distance_km <= 0:
-        request.distance_km = 5.0  # 기본 5km
-    
-    # CO2 절약량과 포인트 계산
-    co2_saved = request.distance_km * config["co2_saved_per_km"]
-    points_earned = int(request.distance_km * config["points_per_km"])
-    
-    # mobility_logs 테이블에 기록
-    insert_query = """
-        INSERT INTO mobility_logs (user_id, mode, distance_km, co2_saved_g, points_earned, description, created_at)
-        VALUES (:user_id, :mode, :distance_km, :co2_saved_g, :points_earned, :description, NOW())
-    """
-    
-    try:
-        db.execute(insert_query, {
-            "user_id": user_id, # 💡 토큰에서 가져온 user_id 사용
-            "mode": config["name"],
-            "distance_km": request.distance_km,
-            "co2_saved_g": co2_saved,
-            "points_earned": points_earned,
-            "description": request.description or f"{config['name']} 이용 {request.distance_km}km"
-        })
-        db.commit()
+    # Create a MobilityLogCreate object
+    log_data = schemas.MobilityLogCreate(
+        mode=schemas.TransportMode(request.activity_type),
+        distance_km=request.distance_km,
+        description=request.description,
+        start_point=request.start_point,
+        end_point=request.end_point,
+        started_at=request.started_at or datetime.now(),
+        ended_at=request.ended_at or datetime.now(),
+    )
 
-        # --- 💡 챌린지 진행률 자동 업데이트 로직 호출 ---
-        crud.update_personal_challenge_progress(db=db, user_id=user_id)
-        # ---------------------------------------------
-        
+    try:
+        # Log the mobility activity using the service
+        MobilityService.log_mobility(db, log_data, current_user)
+
         # 업데이트된 대시보드 데이터 반환
         return get_updated_dashboard_data(user_id, db) # 💡 토큰에서 가져온 user_id 사용
         

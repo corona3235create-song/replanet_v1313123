@@ -18,6 +18,7 @@ class TransportMode(str, Enum):
     BIKE = "BIKE"
     WALK = "WALK"
     CAR = "CAR"
+    TTAREUNGI = "TTAREUNGI"
     ANY = "ANY" # Added for challenge target mode
 
 class ChallengeScope(str, Enum):
@@ -148,7 +149,7 @@ class MobilityLog(BaseModel):
 
 class MobilityLogCreate(BaseModel):
     user_id: int
-    mode: TransportMode
+    mode: Optional[TransportMode] = None
     distance_km: float
     started_at: datetime
     ended_at: datetime
