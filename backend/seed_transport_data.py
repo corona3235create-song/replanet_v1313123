@@ -9,13 +9,13 @@ from sqlalchemy import create_engine
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.database import Base, engine
-from backend.models import BusStop, SubwayStation, TtareungiStation
+from backend.models import BusStop, SubwayStation
 
 # --- Configuration ---
 # Adjust the path to your actual CSV files
-BUS_STOPS_CSV_PATH = r"C:\Users\이승재\Downloads\서울AI해커톤\버스정류장 위치정보.csv"
-SUBWAY_STATIONS_CSV_PATH = r"C:\Users\이승재\Downloads\서울AI해커톤\지하철역 좌표 데이터.csv"
-TTAREUNGI_STATIONS_CSV_PATH = r"C:\Users\이승재\Downloads\서울AI해커톤\따릉이 대여소 위치정보.csv"
+BUS_STOPS_CSV_PATH = r"C:\Users\이승재\Downloads\서울AI해커톤\replanet_v1313123\버스정류장 위치정보.csv"
+SUBWAY_STATIONS_CSV_PATH = r"C:\Users\이승재\Downloads\서울AI해커톤\replanet_v1313123\지하철역 좌표 데이터.csv"
+TTAREUNGI_STATIONS_CSV_PATH = r"C:\Users\이승재\Downloads\서울AI해커톤\replanet_v1313123\따릉이 대여소 위치정보.csv"
 # IMPORTANT: Replace DB_NAME_HERE with your actual MySQL database name
 DATABASE_URL = "mysql+pymysql://admin:!donggukCAI1234@localhost:3306/seoul-ht-08-db" 
 
@@ -96,38 +96,6 @@ def seed_subway_stations(db: Session):
     except Exception as e:
         print(f"An error occurred while seeding subway stations: {e}")
 
-def seed_ttareungi_stations(db: Session):
-    """Reads Ttareungi station CSV and populates the ttareungi_stations table."""
-    if db.query(TtareungiStation).first():
-        print("TtareungiStation data already exists. Skipping seeding.")
-        return
-
-    print("Seeding Ttareungi stations...")
-    try:
-        with open(TTAREUNGI_STATIONS_CSV_PATH, mode='r', encoding='euc-kr') as csvfile:
-            reader = csv.DictReader(csvfile)
-            stations_to_add = []
-            for row in reader:
-                try:
-                    station = TtareungiStation(
-                        station_id=int(row['대여소']), # Assuming '대여소' is the station ID column
-                        station_name=row['대여소명'],
-                        latitude=float(row['위도']),
-                        longitude=float(row['경도'])
-                    )
-                    stations_to_add.append(station)
-                except (ValueError, KeyError) as e:
-                    print(f"Skipping row due to error: {row} - {e}")
-            
-            db.bulk_save_objects(stations_to_add)
-            db.commit()
-            print(f"Successfully seeded {len(stations_to_add)} Ttareungi stations.")
-
-    except FileNotFoundError:
-        print(f"ERROR: Ttareungi stations CSV file not found at {TTAREUNGI_STATIONS_CSV_PATH}")
-    except Exception as e:
-        print(f"An error occurred while seeding Ttareungi stations: {e}")
-
 
 if __name__ == "__main__":
     print("Starting data seeding process...")
@@ -141,7 +109,6 @@ if __name__ == "__main__":
     
     seed_bus_stops(db)
     seed_subway_stations(db)
-    seed_ttareungi_stations(db)
     
     db.close()
     print("Data seeding process finished.")
